@@ -54,24 +54,25 @@ type VhostGenerator struct {
 
 // VhostConfig contains all data needed to generate a vhost
 type VhostConfig struct {
-	ProjectName   string
-	ProjectPath   string // Absolute path to project root (for config file references)
-	Domain        string
-	DocumentRoot  string
-	PHPVersion    string
-	PHPSocketPath string
-	SSLEnabled    bool
-	SSLCertFile   string
-	SSLKeyFile    string
-	UseVarnish    bool
-	VarnishPort   int
-	HTTPPort      int    // 80 on Linux, 8080 on macOS (port forwarding)
-	HTTPSPort     int    // 443 on Linux, 8443 on macOS (port forwarding)
-	BackendPort   int    // Backend port for Varnish (always 8080 when Varnish enabled)
-	StoreCode     string // Magento store code for multi-store setup (default: "default")
-	MageRunType   string // Magento run type: "store" or "website" (default: "store")
-	AccessLog     string // Path to access log file
-	ErrorLog      string // Path to error log file
+	ProjectName    string
+	ProjectPath    string // Absolute path to project root (for config file references)
+	Domain         string
+	DocumentRoot   string
+	PHPVersion     string
+	PHPSocketPath  string
+	SSLEnabled     bool
+	SSLCertFile    string
+	SSLKeyFile     string
+	UseVarnish     bool
+	VarnishPort    int
+	HTTPPort       int    // 80 on Linux, 8080 on macOS (port forwarding)
+	HTTPSPort      int    // 443 on Linux, 8443 on macOS (port forwarding)
+	BackendPort    int    // Backend port for Varnish (always 8080 when Varnish enabled)
+	StoreCode      string // Magento store code for multi-store setup (default: "default")
+	MageRunType    string // Magento run type: "store" or "website" (default: "store")
+	AccessLog      string // Path to access log file
+	ErrorLog       string // Path to error log file
+	CustomNginxDir string // Path to project-level custom nginx snippets directory (if it exists)
 }
 
 // ProxyConfig contains data needed to generate a proxy vhost
@@ -162,6 +163,12 @@ func (g *VhostGenerator) Generate(cfg *config.Config, projectPath string) error 
 			ErrorLog:      filepath.Join(logsDir, fmt.Sprintf("%s-error.log", sanitizedDomain)),
 		}
 
+		// Check for project-level custom nginx snippets directory
+		customNginxDir := filepath.Join(projectPath, ".magebox", "nginx")
+		if info, err := os.Stat(customNginxDir); err == nil && info.IsDir() {
+			vhostCfg.CustomNginxDir = customNginxDir
+		}
+
 		// Get SSL cert paths if SSL is enabled
 		if vhostCfg.SSLEnabled {
 			certPaths := g.sslManager.GetCertPaths(ssl.ExtractBaseDomain(domain.Host))
@@ -214,9 +221,19 @@ func (g *VhostGenerator) getPHPSocketPath(projectName, phpVersion string) string
 
 // renderVhost renders the vhost template
 func (g *VhostGenerator) renderVhost(cfg VhostConfig) (string, error) {
-	tmplContent, err := lib.GetTemplate(lib.TemplateNginx, "vhost.conf.tmpl")
-	if err != nil {
-		return "", err
+	var tmplContent string
+
+	// Check for project-level template override
+	projectTmpl := filepath.Join(cfg.ProjectPath, ".magebox", "templates", "nginx", "vhost.conf.tmpl")
+	if data, err := os.ReadFile(projectTmpl); err == nil {
+		tmplContent = string(data)
+	} else {
+		// Fall back to global template (yaml-local → yaml → embedded)
+		var err error
+		tmplContent, err = lib.GetTemplate(lib.TemplateNginx, "vhost.conf.tmpl")
+		if err != nil {
+			return "", err
+		}
 	}
 
 	tmpl, err := template.New("vhost").Parse(tmplContent)

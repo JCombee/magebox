@@ -358,6 +358,79 @@ func TestVhostTemplateValidity(t *testing.T) {
 	}
 }
 
+func TestRenderVhost_ProjectTemplateOverride(t *testing.T) {
+	g, tmpDir := setupTestGenerator(t)
+
+	projectPath := filepath.Join(tmpDir, "projects", "mystore")
+
+	// Create project-level template override
+	projectTmplDir := filepath.Join(projectPath, ".magebox", "templates", "nginx")
+	if err := os.MkdirAll(projectTmplDir, 0755); err != nil {
+		t.Fatalf("Failed to create project template dir: %v", err)
+	}
+
+	customTemplate := `# CUSTOM PROJECT TEMPLATE for {{.ProjectName}}
+server {
+    server_name {{.Domain}};
+    root {{.DocumentRoot}};
+}`
+	if err := os.WriteFile(filepath.Join(projectTmplDir, "vhost.conf.tmpl"), []byte(customTemplate), 0644); err != nil {
+		t.Fatalf("Failed to write custom template: %v", err)
+	}
+
+	cfg := VhostConfig{
+		ProjectName:   "mystore",
+		ProjectPath:   projectPath,
+		Domain:        "mystore.test",
+		DocumentRoot:  "/var/www/mystore/pub",
+		PHPVersion:    "8.2",
+		PHPSocketPath: filepath.Join(tmpDir, ".magebox", "run", "mystore-php8.2.sock"),
+		HTTPPort:      80,
+		HTTPSPort:     443,
+	}
+
+	content, err := g.renderVhost(cfg)
+	if err != nil {
+		t.Fatalf("renderVhost failed: %v", err)
+	}
+
+	// Should use the custom project template
+	if !strings.Contains(content, "CUSTOM PROJECT TEMPLATE") {
+		t.Error("renderVhost should use project-level template override")
+	}
+	if !strings.Contains(content, "server_name mystore.test") {
+		t.Error("renderVhost should still render template variables")
+	}
+}
+
+func TestRenderVhost_FallsBackWithoutProjectTemplate(t *testing.T) {
+	g, tmpDir := setupTestGenerator(t)
+
+	projectPath := filepath.Join(tmpDir, "projects", "mystore")
+	// Do NOT create a project-level template
+
+	cfg := VhostConfig{
+		ProjectName:   "mystore",
+		ProjectPath:   projectPath,
+		Domain:        "mystore.test",
+		DocumentRoot:  "/var/www/mystore/pub",
+		PHPVersion:    "8.2",
+		PHPSocketPath: filepath.Join(tmpDir, ".magebox", "run", "mystore-php8.2.sock"),
+		HTTPPort:      80,
+		HTTPSPort:     443,
+	}
+
+	content, err := g.renderVhost(cfg)
+	if err != nil {
+		t.Fatalf("renderVhost failed: %v", err)
+	}
+
+	// Should use the embedded default template (contains "MageBox generated vhost")
+	if !strings.Contains(content, "MageBox generated vhost") {
+		t.Error("renderVhost should fall back to default template when no project override exists")
+	}
+}
+
 func TestController_addIncludeToNginxConfDarwin(t *testing.T) {
 	tests := []struct {
 		name           string

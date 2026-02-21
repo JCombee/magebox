@@ -109,16 +109,58 @@ server {
 
 ## Custom Configuration
 
-### Adding Custom Rules
+### Project-Level Nginx Snippets
 
-Create a custom configuration file alongside the generated one:
+Add custom nginx directives per project by creating `.conf` files in `{project}/.magebox/nginx/`:
 
 ```bash
-~/.magebox/nginx/vhosts/mystore-mystore.test.conf.custom
+mkdir -p .magebox/nginx
+
+# Add custom headers
+cat > .magebox/nginx/custom-headers.conf << 'EOF'
+add_header X-Custom-Header "my-value";
+EOF
+
+# Add a custom location block
+cat > .magebox/nginx/api-proxy.conf << 'EOF'
+location /api/external/ {
+    proxy_pass http://localhost:3000/;
+}
+EOF
+
+# Restart to apply
+mbox restart
 ```
 
+Snippets are automatically included inside the server block of the generated vhost. You can add multiple `.conf` files — they're all included via `include {project}/.magebox/nginx/*.conf;`.
+
+### Project-Level Vhost Template Override
+
+If snippets aren't enough and you need to change the entire vhost structure (e.g., modify fastcgi params, change gzip settings, restructure location blocks), you can override the full vhost template per project:
+
+```bash
+# Copy the default template
+mkdir -p .magebox/templates/nginx
+cp ~/.magebox/yaml/templates/nginx/vhost.conf.tmpl .magebox/templates/nginx/
+
+# Edit the template
+vim .magebox/templates/nginx/vhost.conf.tmpl
+
+# Restart to apply
+mbox restart
+```
+
+The template uses Go's `text/template` syntax with access to all [VhostConfig fields](#generated-configuration) (e.g., `{{.Domain}}`, `{{.DocumentRoot}}`, `{{.SSLEnabled}}`).
+
+**Override precedence** (most specific wins):
+
+1. `{project}/.magebox/templates/nginx/vhost.conf.tmpl` — project-level
+2. `~/.magebox/yaml-local/templates/nginx/vhost.conf.tmpl` — user global override
+3. `~/.magebox/yaml/templates/nginx/vhost.conf.tmpl` — default templates
+4. Embedded default — compiled into binary
+
 ::: warning
-Custom files are not automatically included. You'll need to add an include directive manually or modify the main nginx.conf.
+When overriding the full template, you're responsible for keeping it compatible with future MageBox updates. Prefer using snippets when possible.
 :::
 
 ### Store Code Mapping

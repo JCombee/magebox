@@ -5,6 +5,8 @@
 #   Main config:  {{.ProjectPath}}/.magebox.yaml
 #   Local config: {{.ProjectPath}}/.magebox.local.yaml
 #
+# Custom nginx snippets: {{.ProjectPath}}/.magebox/nginx/*.conf
+#
 # Modify domains, ssl, services in the above files, then run: mbox restart
 
 {{if .SSLEnabled}}
@@ -237,4 +239,8 @@ server {
     location ~* (\.php$|\.phtml$|\.htaccess$|\.git) {
         deny all;
     }
+{{if .CustomNginxDir}}
+    # Project-level custom nginx config snippets
+    include {{.CustomNginxDir}}/*.conf;
+{{end}}
 }

@@ -2,6 +2,17 @@
 
 All notable changes to MageBox will be documented here.
 
+## [1.3.0] - 2026-02-21
+
+### New Features
+
+- **Project-Level Custom Nginx Snippets** - Add custom nginx config per project via `{project}/.magebox/nginx/*.conf`. Snippets are included inside the server block, perfect for custom headers, rewrites, or additional location blocks.
+- **Project-Level Vhost Template Override** - Override the entire nginx vhost template per project by placing a custom template at `{project}/.magebox/templates/nginx/vhost.conf.tmpl`. Precedence: project → user global → default embedded.
+
+### Bug Fixes
+
+- **Fedora Nginx Permissions** - Fixed `/var/lib/nginx` ownership not persisting across reboots. The tmpfiles.d config now properly overrides the system default.
+
 ## [1.2.7] - 2026-02-04
 
 ### Bug Fixes

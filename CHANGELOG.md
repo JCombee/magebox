@@ -5,6 +5,30 @@ All notable changes to MageBox will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-02-21
+
+### Added
+
+- **Project-Level Custom Nginx Snippets** - Add custom nginx config per project:
+  - Create `{project}/.magebox/nginx/*.conf` files to add custom nginx directives
+  - Snippets are automatically included inside the server block of the generated vhost
+  - Useful for custom headers, rewrites, proxy rules, or additional location blocks
+  - No need to modify the global nginx configuration
+
+- **Project-Level Vhost Template Override** - Full control over the nginx vhost template per project:
+  - Place a custom template at `{project}/.magebox/templates/nginx/vhost.conf.tmpl`
+  - Overrides the default vhost structure for that project only
+  - Override precedence: project → user global (`~/.magebox/yaml-local/`) → default embedded
+  - Useful when custom snippets aren't enough and you need to change the entire vhost structure
+
+### Fixed
+
+- **Fedora Nginx Permissions** - Fixed `/var/lib/nginx` ownership not persisting across reboots:
+  - Added `/var/lib/nginx` base directory to tmpfiles.d config
+  - Added `/var/log/nginx` directory entry for proper log permissions
+  - Renamed tmpfiles.d config to `nginx.conf` to properly override the system default
+  - Prevents systemd from resetting ownership to `nginx:root` on boot
+
 ## [1.2.7] - 2026-02-04
 
 ### Fixed

@@ -237,7 +237,7 @@ func GetSystemSettingsList() []string {
 // FormatOwnerWarning formats a warning message when system settings are being overwritten
 func FormatOwnerWarning(previous *SystemINIOwner, newProject string, newSettings map[string]string) string {
 	var msg strings.Builder
-	msg.WriteString(fmt.Sprintf("\n⚠  PHP system settings (PHP_INI_SYSTEM) are being changed\n"))
+	msg.WriteString("\n⚠  PHP system settings (PHP_INI_SYSTEM) are being changed\n")
 	msg.WriteString(fmt.Sprintf("   Previous owner: %s\n", previous.ProjectName))
 	msg.WriteString(fmt.Sprintf("   Previous path:  %s\n", previous.ProjectPath))
 	msg.WriteString(fmt.Sprintf("   New owner:      %s\n", newProject))

@@ -252,15 +252,20 @@ func (f *FedoraInstaller) ConfigureNginx() error {
 
 		// Create tmpfiles.d config for persistent permissions across reboots/restarts
 		// Without this, systemd recreates /var/lib/nginx/tmp with wrong permissions
-		tmpfilesContent := fmt.Sprintf(`d /var/lib/nginx/tmp 0755 %s %s -
+		tmpfilesContent := fmt.Sprintf(`d /var/lib/nginx 0755 %s %s -
+d /var/lib/nginx/tmp 0755 %s %s -
 d /var/lib/nginx/tmp/client_body 0755 %s %s -
 d /var/lib/nginx/tmp/fastcgi 0755 %s %s -
 d /var/lib/nginx/tmp/proxy 0755 %s %s -
 d /var/lib/nginx/tmp/scgi 0755 %s %s -
 d /var/lib/nginx/tmp/uwsgi 0755 %s %s -
-`, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser)
-		_ = f.WriteFile("/etc/tmpfiles.d/nginx-magebox.conf", tmpfilesContent)
-		_ = f.RunSudo("systemd-tmpfiles", "--create", "/etc/tmpfiles.d/nginx-magebox.conf")
+d /var/log/nginx 0711 root root -
+`, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser, currentUser)
+		// Use the same filename as the system nginx.conf so /etc overrides /usr/lib
+		// This prevents the system config from resetting ownership to nginx:root on boot
+		_ = f.WriteFile("/etc/tmpfiles.d/nginx.conf", tmpfilesContent)
+		_ = f.RunSudo("rm", "-f", "/etc/tmpfiles.d/nginx-magebox.conf") // Remove old config name
+		_ = f.RunSudo("systemd-tmpfiles", "--create", "/etc/tmpfiles.d/nginx.conf")
 
 		// Restore SELinux context after changing ownership
 		if f.CommandExists("restorecon") {
