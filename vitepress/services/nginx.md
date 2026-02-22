@@ -150,7 +150,7 @@ vim .magebox/templates/nginx/vhost.conf.tmpl
 mbox restart
 ```
 
-The template uses Go's `text/template` syntax with access to all [VhostConfig fields](#generated-configuration) (e.g., `{{.Domain}}`, `{{.DocumentRoot}}`, `{{.SSLEnabled}}`).
+The template uses Go's `text/template` syntax with access to all [VhostConfig fields](#generated-configuration) (e.g., <code v-pre>{{.Domain}}</code>, <code v-pre>{{.DocumentRoot}}</code>, <code v-pre>{{.SSLEnabled}}</code>).
 
 **Override precedence** (most specific wins):
 
