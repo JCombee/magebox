@@ -2,6 +2,23 @@
 
 All notable changes to MageBox will be documented here.
 
+## [1.3.3] - 2026-03-04
+
+### New Features
+
+- **Single VERSION File** - Version is now managed in a single `VERSION` file at the repo root. Go, VitePress, and CI all read from it, eliminating version drift.
+- **MageOS 2.1.0 Support** - Added as the default distribution for `mbox new --quick` (PHP 8.2/8.3/8.4).
+- **Weekly Upstream Release Check** - GitHub Action detects new Magento/MageOS releases every Monday and opens an issue for review.
+
+### Changes
+
+- **Simplified Quick Install** - Removed Redis and RabbitMQ from `--quick` mode for a cleaner, minimal setup. Add them later via `.magebox.yaml` when needed.
+
+### Bug Fixes
+
+- **Quick Install Database Name** - Fixed mismatch between `ensureDatabase` (sanitized: `product_feeds`) and `setup:install` (raw: `product-feeds`). Both paths now use the sanitized name.
+- **Quick Install PHP Wrapper** - Fixed `setup:install` and post-install commands (`sampledata:deploy`, `setup:upgrade`, `indexer:reindex`, `cache:flush`) using the Composer wrapper instead of the PHP wrapper.
+
 ## [1.3.0] - 2026-02-21
 
 ### New Features

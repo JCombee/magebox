@@ -742,13 +742,15 @@ commands:
 	fmt.Println(cli.Bullet("2. Install Magento:"))
 
 	// Build setup:install command based on selected services
+	// Sanitize database name (hyphens → underscores, matching ensureDatabase)
+	dbName := strings.ReplaceAll(projectName, "-", "_")
 	installCmd := fmt.Sprintf(`php bin/magento setup:install \
     --base-url=https://%s \
     --backend-frontname=admin \
     --db-host=127.0.0.1:%s \
     --db-name=%s \
     --db-user=root \
-    --db-password=magebox`, domainInput, dbPort, projectName)
+    --db-password=magebox`, domainInput, dbPort, dbName)
 
 	// Add search engine config
 	if searchEngine == "opensearch" {
@@ -910,7 +912,7 @@ func runNewQuick(targetDir string, p *platform.Platform) error {
 	fmt.Println(cli.Bullet("PHP:          " + cli.Highlight(selectedPHP)))
 	fmt.Println(cli.Bullet("Database:     " + cli.Highlight("MySQL "+dbVersion)))
 	fmt.Println(cli.Bullet("Search:       " + cli.Highlight("OpenSearch "+searchVersion)))
-	fmt.Println(cli.Bullet("Services:     " + cli.Highlight("Redis, RabbitMQ, Mailpit")))
+	fmt.Println(cli.Bullet("Services:     " + cli.Highlight("Mailpit")))
 	fmt.Println(cli.Bullet("Sample Data:  " + cli.Highlight("Yes")))
 	fmt.Println(cli.Bullet("Directory:    " + cli.Highlight(projectDir)))
 	fmt.Println(cli.Bullet("Domain:       " + cli.Highlight(domainInput)))
@@ -942,8 +944,6 @@ services:
   opensearch:
     version: "%s"
     memory: "2g"
-  redis: true
-  rabbitmq: true
   mailpit: true
 
 commands:
@@ -1045,12 +1045,15 @@ commands:
 	fmt.Println()
 	cli.PrintInfo("Running Magento setup:install (this may take several minutes)...")
 
+	// Sanitize database name (hyphens → underscores, matching ensureDatabase)
+	dbName := strings.ReplaceAll(projectName, "-", "_")
+
 	setupArgs := []string{
 		"bin/magento", "setup:install",
 		"--base-url=https://" + domainInput,
 		"--backend-frontname=admin",
 		"--db-host=127.0.0.1:" + dbPort,
-		"--db-name=" + projectName,
+		"--db-name=" + dbName,
 		fmt.Sprintf("--db-user=%s", DefaultDBUser),
 		fmt.Sprintf("--db-password=%s", DefaultDBPassword),
 		"--admin-firstname=Admin",
@@ -1067,25 +1070,10 @@ commands:
 		fmt.Sprintf("--opensearch-port=%d", OpenSearchDefaultPort),
 		"--opensearch-index-prefix=magento2",
 		"--opensearch-timeout=15",
-		"--session-save=redis",
-		"--session-save-redis-host=127.0.0.1",
-		fmt.Sprintf("--session-save-redis-port=%d", RedisDefaultPort),
-		fmt.Sprintf("--session-save-redis-db=%d", RedisSessionDB),
-		"--cache-backend=redis",
-		"--cache-backend-redis-server=127.0.0.1",
-		fmt.Sprintf("--cache-backend-redis-port=%d", RedisDefaultPort),
-		fmt.Sprintf("--cache-backend-redis-db=%d", RedisCacheDB),
-		"--page-cache=redis",
-		"--page-cache-redis-server=127.0.0.1",
-		fmt.Sprintf("--page-cache-redis-port=%d", RedisDefaultPort),
-		fmt.Sprintf("--page-cache-redis-db=%d", RedisFullPageCacheDB),
-		"--amqp-host=127.0.0.1",
-		fmt.Sprintf("--amqp-port=%d", RabbitMQDefaultPort),
-		fmt.Sprintf("--amqp-user=%s", RabbitMQDefaultUser),
-		fmt.Sprintf("--amqp-password=%s", RabbitMQDefaultPass),
 	}
 
-	setupCmd := exec.Command(wrapperPath, setupArgs...)
+	phpWrapperPath := filepath.Join(p.MageBoxDir(), "bin", "php")
+	setupCmd := exec.Command(phpWrapperPath, setupArgs...)
 	setupCmd.Dir = projectDir
 	setupCmd.Stdout = os.Stdout
 	setupCmd.Stderr = os.Stderr
@@ -1106,7 +1094,7 @@ commands:
 	fmt.Println()
 	cli.PrintInfo("Deploying sample data...")
 
-	sampleDataCmd := exec.Command(wrapperPath, "bin/magento", "sampledata:deploy")
+	sampleDataCmd := exec.Command(phpWrapperPath, "bin/magento", "sampledata:deploy")
 	sampleDataCmd.Dir = projectDir
 	sampleDataCmd.Stdout = os.Stdout
 	sampleDataCmd.Stderr = os.Stderr
@@ -1119,7 +1107,7 @@ commands:
 	fmt.Println()
 	cli.PrintInfo("Running setup:upgrade...")
 
-	upgradeCmd := exec.Command(wrapperPath, "bin/magento", "setup:upgrade")
+	upgradeCmd := exec.Command(phpWrapperPath, "bin/magento", "setup:upgrade")
 	upgradeCmd.Dir = projectDir
 	upgradeCmd.Stdout = os.Stdout
 	upgradeCmd.Stderr = os.Stderr
@@ -1131,7 +1119,7 @@ commands:
 	fmt.Println()
 	cli.PrintInfo("Running indexer:reindex...")
 
-	reindexCmd := exec.Command(wrapperPath, "bin/magento", "indexer:reindex")
+	reindexCmd := exec.Command(phpWrapperPath, "bin/magento", "indexer:reindex")
 	reindexCmd.Dir = projectDir
 	reindexCmd.Stdout = os.Stdout
 	reindexCmd.Stderr = os.Stderr
@@ -1143,7 +1131,7 @@ commands:
 	fmt.Println()
 	cli.PrintInfo("Flushing cache...")
 
-	cacheCmd := exec.Command(wrapperPath, "bin/magento", "cache:flush")
+	cacheCmd := exec.Command(phpWrapperPath, "bin/magento", "cache:flush")
 	cacheCmd.Dir = projectDir
 	cacheCmd.Stdout = os.Stdout
 	cacheCmd.Stderr = os.Stderr
