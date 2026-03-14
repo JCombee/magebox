@@ -697,3 +697,15 @@ func (m *Manager) ensureEnvPHP(projectPath string, cfg *config.Config) error {
 	envGen := newEnvGenerator(projectPath, cfg)
 	return envGen.Generate()
 }
+
+// RegenerateEnvPHP overwrites Magento's app/etc/env.php with the MageBox template,
+// applying settings like developer mode and service configuration.
+func (m *Manager) RegenerateEnvPHP(projectPath string) error {
+	cfg, err := config.LoadFromPath(projectPath)
+	if err != nil {
+		return err
+	}
+
+	envGen := newEnvGenerator(projectPath, cfg)
+	return envGen.Generate()
+}

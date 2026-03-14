@@ -1045,6 +1045,13 @@ commands:
 	fmt.Println()
 	cli.PrintInfo("Running Magento setup:install (this may take several minutes)...")
 
+	// Remove env.php before setup:install so Magento generates a clean one.
+	// The Start() step may have created env.php (via ensureEnvPHP) with developer
+	// mode and cache types enabled, which can interfere with DI preference resolution
+	// during schema installation.
+	envPHPPath := filepath.Join(projectDir, "app", "etc", "env.php")
+	os.Remove(envPHPPath)
+
 	// Sanitize database name (hyphens → underscores, matching ensureDatabase)
 	dbName := strings.ReplaceAll(projectName, "-", "_")
 
@@ -1089,6 +1096,12 @@ commands:
 	}
 
 	fmt.Println("  Magento installed " + cli.Success("✓"))
+
+	// Regenerate env.php with MageBox-specific settings (developer mode, Mailpit, etc.)
+	// setup:install creates a basic env.php; we overwrite it with the full template.
+	if err := projectMgr.RegenerateEnvPHP(projectDir); err != nil {
+		cli.PrintWarning("Failed to regenerate env.php: %v", err)
+	}
 
 	// Step 7: Deploy sample data
 	fmt.Println()
