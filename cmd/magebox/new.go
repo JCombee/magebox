@@ -565,10 +565,11 @@ func runNew(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check Hyvä Composer repository URL if --hyva is set
+	composerWrapperPath := filepath.Join(p.MageBoxDir(), "bin", "composer")
 	var hyvaRepoURL string
 	if newHyva {
 		var err error
-		hyvaRepoURL, err = ensureHyvaRepoURL()
+		hyvaRepoURL, err = ensureHyvaRepoURL(composerWrapperPath)
 		if err != nil {
 			return err
 		}
@@ -876,7 +877,7 @@ func runNewQuick(targetDir string, p *platform.Platform) error {
 	var hyvaRepoURL string
 	if newHyva {
 		var err error
-		hyvaRepoURL, err = ensureHyvaRepoURL()
+		hyvaRepoURL, err = ensureHyvaRepoURL(wrapperPath)
 		if err != nil {
 			return err
 		}
@@ -1253,25 +1254,42 @@ commands:
 // HyvaComposerRepoHost is the hostname for Hyvä's Private Packagist
 const HyvaComposerRepoHost = "hyva-themes.repo.packagist.com"
 
+// hasHyvaComposerAuth checks if Hyvä Composer authentication is already configured
+func hasHyvaComposerAuth() bool {
+	homeDir, _ := os.UserHomeDir()
+	for _, authFile := range []string{
+		filepath.Join(homeDir, ".config", "composer", "auth.json"),
+		filepath.Join(homeDir, ".composer", "auth.json"),
+	} {
+		content, err := os.ReadFile(authFile)
+		if err == nil && strings.Contains(string(content), HyvaComposerRepoHost) {
+			return true
+		}
+	}
+	return false
+}
+
 // getHyvaRepoURL checks the global Composer config for an existing Hyvä repository URL.
 // Returns the URL if found, or empty string if not configured.
 func getHyvaRepoURL() string {
 	homeDir, _ := os.UserHomeDir()
 
 	// Check global composer.json for existing Hyvä repo
-	globalComposer := filepath.Join(homeDir, ".config", "composer", "composer.json")
-	content, err := os.ReadFile(globalComposer)
-	if err != nil {
-		// Try legacy path
-		globalComposer = filepath.Join(homeDir, ".composer", "composer.json")
-		content, err = os.ReadFile(globalComposer)
-	}
-	if err == nil && strings.Contains(string(content), HyvaComposerRepoHost) {
-		// Extract the URL - look for the full repo URL pattern
-		lines := strings.Split(string(content), "\"")
-		for _, part := range lines {
-			if strings.Contains(part, HyvaComposerRepoHost) && strings.HasPrefix(part, "https://") {
-				return part
+	for _, globalComposer := range []string{
+		filepath.Join(homeDir, ".config", "composer", "composer.json"),
+		filepath.Join(homeDir, ".composer", "composer.json"),
+	} {
+		content, err := os.ReadFile(globalComposer)
+		if err != nil {
+			continue
+		}
+		if strings.Contains(string(content), HyvaComposerRepoHost) {
+			// Extract the URL - look for the full repo URL pattern
+			parts := strings.Split(string(content), "\"")
+			for _, part := range parts {
+				if strings.Contains(part, HyvaComposerRepoHost) && strings.HasPrefix(part, "https://") {
+					return part
+				}
 			}
 		}
 	}
@@ -1279,39 +1297,64 @@ func getHyvaRepoURL() string {
 	return ""
 }
 
-// ensureHyvaRepoURL checks for an existing Hyvä repo URL or prompts the user.
+// ensureHyvaRepoURL checks for an existing Hyvä repo URL and auth, or prompts the user.
 // Returns the repo URL or empty string if the user declined.
-func ensureHyvaRepoURL() (string, error) {
-	// Check if already configured globally
-	if repoURL := getHyvaRepoURL(); repoURL != "" {
-		fmt.Println("  " + cli.Success("✓") + " Found existing Hyvä Composer repository")
+func ensureHyvaRepoURL(composerWrapper string) (string, error) {
+	repoURL := getHyvaRepoURL()
+	hasAuth := hasHyvaComposerAuth()
+
+	if repoURL != "" && hasAuth {
+		fmt.Println("  " + cli.Success("✓") + " Found existing Hyvä Composer repository and authentication")
 		return repoURL, nil
 	}
 
-	fmt.Println()
-	cli.PrintInfo("Hyvä theme requires a Private Packagist repository URL.")
-	fmt.Println("  Find your repository URL in your Hyvä account at " + cli.URL("https://www.hyva.io/customer/account/login/"))
-	fmt.Println("  It looks like: https://hyva-themes.repo.packagist.com/<your-token>/")
-	fmt.Println()
-
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("  Hyvä Composer repository URL: ")
-	repoURL, _ := reader.ReadString('\n')
-	repoURL = strings.TrimSpace(repoURL)
+
+	// Prompt for repo URL if not found
 	if repoURL == "" {
-		cli.PrintError("Hyvä repository URL is required for Hyvä installation")
-		return "", nil
+		fmt.Println()
+		cli.PrintInfo("Hyvä theme requires a Private Packagist repository URL and token.")
+		fmt.Println("  Find both in your Hyvä account at " + cli.URL("https://www.hyva.io/customer/account/login/"))
+		fmt.Println()
+
+		fmt.Print("  Hyvä Composer repository URL: ")
+		input, _ := reader.ReadString('\n')
+		repoURL = strings.TrimSpace(input)
+		if repoURL == "" {
+			cli.PrintError("Hyvä repository URL is required for Hyvä installation")
+			return "", nil
+		}
+
+		if !strings.Contains(repoURL, HyvaComposerRepoHost) {
+			cli.PrintError("Invalid URL: must be a %s URL", HyvaComposerRepoHost)
+			return "", nil
+		}
+
+		// Ensure trailing slash
+		if !strings.HasSuffix(repoURL, "/") {
+			repoURL += "/"
+		}
+	} else {
+		fmt.Println("  " + cli.Success("✓") + " Found existing Hyvä Composer repository")
 	}
 
-	// Validate the URL looks correct
-	if !strings.Contains(repoURL, HyvaComposerRepoHost) {
-		cli.PrintError("Invalid URL: must be a %s URL", HyvaComposerRepoHost)
-		return "", nil
-	}
+	// Prompt for auth token if not found
+	if !hasAuth {
+		fmt.Print("  Hyvä Composer token: ")
+		input, _ := reader.ReadString('\n')
+		token := strings.TrimSpace(input)
+		if token == "" {
+			cli.PrintError("Hyvä Composer token is required for Hyvä installation")
+			return "", nil
+		}
 
-	// Ensure trailing slash
-	if !strings.HasSuffix(repoURL, "/") {
-		repoURL += "/"
+		// Configure http-basic auth: username is "token", password is the actual token
+		authCmd := exec.Command(composerWrapper, "config", "--global",
+			fmt.Sprintf("http-basic.%s", HyvaComposerRepoHost), "token", token)
+		if err := authCmd.Run(); err != nil {
+			return "", fmt.Errorf("failed to configure Hyvä Composer auth: %w", err)
+		}
+		fmt.Println("  " + cli.Success("✓") + " Hyvä Composer authentication configured")
 	}
 
 	return repoURL, nil
