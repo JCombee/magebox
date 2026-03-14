@@ -260,6 +260,31 @@ sudo chcon -R -t httpd_config_t ~/.magebox/certs/
 2. Verify Docker is running
 3. Check the specific service: `magebox logs mysql`
 
+### "The store that was requested wasn't found"
+
+If you see an error like:
+
+```
+Magento\Framework\Exception\NoSuchEntityException: The store that was requested wasn't found.
+Verify the store and try again.
+```
+
+This happens because MageBox sets `MAGE_RUN_CODE` to `default` when no store code is configured for a domain. If your Magento installation's default store code is not `default`, you need to specify the correct store code:
+
+```bash
+magebox domain add mystore.test --store-code=my_store_code
+```
+
+Or add it manually in `.magebox.yaml`:
+
+```yaml
+domains:
+  - host: mystore.test
+    mage_run_code: my_store_code
+```
+
+Then restart with `magebox restart`.
+
 ### "502 Bad Gateway" from nginx
 
 PHP-FPM isn't running or crashed:
