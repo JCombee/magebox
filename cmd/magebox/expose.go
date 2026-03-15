@@ -557,18 +557,26 @@ func revertExposeState(db *dbInfo, dbName, phpBin, cwd, stateFile string) {
 }
 
 // addTunnelDomain adds the tunnel hostname as a domain to .magebox.yaml,
-// regenerates nginx vhosts, and reloads nginx.
+// regenerates nginx vhosts, and reloads nginx. Cleans up any stale
+// tunnel domains from previous runs first.
 func addTunnelDomain(p *platform.Platform, cwd string, cfg *config.Config, tunnelHost, sourceDomain string) {
 	fmt.Print("Adding tunnel domain to config... ")
 
+	// Remove any stale tunnel domains from previous runs
 	var root string
+	cleanDomains := make([]config.Domain, 0, len(cfg.Domains))
 	for _, d := range cfg.Domains {
+		if strings.HasSuffix(d.Host, ".trycloudflare.com") {
+			continue // skip stale tunnel domain
+		}
 		if d.Host == sourceDomain {
 			root = d.Root
-			break
 		}
+		cleanDomains = append(cleanDomains, d)
 	}
+	cfg.Domains = cleanDomains
 
+	// Add the new tunnel domain
 	sslDisabled := false
 	cfg.Domains = append(cfg.Domains, config.Domain{
 		Host: tunnelHost,
