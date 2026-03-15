@@ -754,6 +754,59 @@ Requires `multitail`. Run `magebox bootstrap` to install it.
 
 ---
 
+### `magebox logs php`
+
+View PHP-FPM error logs for the current project.
+
+```bash
+magebox logs php        # View in multitail or tail
+magebox logs php -f     # Follow mode (tail -f)
+magebox logs php -n 50  # Show last 50 lines
+```
+
+Finds log files matching the project name in `~/.magebox/logs/php-fpm/`. Uses multitail when available, falls back to `tail`.
+
+---
+
+### `magebox logs nginx`
+
+View Nginx access and error logs for the current project.
+
+```bash
+magebox logs nginx        # View in multitail split-screen
+magebox logs nginx -f     # Follow mode
+```
+
+Shows per-domain access and error logs from `~/.magebox/logs/nginx/`. With multiple domains, multitail displays them in a split-screen layout.
+
+---
+
+### `magebox logs mysql`
+
+Stream MySQL/MariaDB Docker container logs.
+
+```bash
+magebox logs mysql          # Stream logs (Ctrl+C to stop)
+magebox logs mysql -n 200   # Show last 200 lines
+```
+
+Auto-detects whether the project uses MySQL or MariaDB.
+
+---
+
+### `magebox logs redis`
+
+Stream Redis Docker container logs.
+
+```bash
+magebox logs redis          # Stream logs (Ctrl+C to stop)
+magebox logs redis -n 200   # Show last 200 lines
+```
+
+Requires Redis to be configured in `.magebox.yaml`.
+
+---
+
 ### `magebox report`
 
 Watch for Magento error reports.

@@ -146,11 +146,47 @@ php -r "throw new Exception('Test error');"
 
 Press `Ctrl+C` to stop watching for new reports.
 
-## Nginx Logs
+## Service-Specific Logs
 
-MageBox stores per-domain nginx logs for easy debugging:
+MageBox provides dedicated log commands for each service, making it easy to debug issues without hunting for log file paths.
 
-### Location
+### Global Flags
+
+All `magebox logs` subcommands support these flags:
+
+| Flag | Description |
+|------|-------------|
+| `-f`, `--follow` | Follow log output (tail -f) |
+| `-n`, `--lines` | Number of lines to show (default: 100) |
+
+### `magebox logs php`
+
+View PHP-FPM error logs for the current project.
+
+```bash
+magebox logs php        # View in multitail (or tail if unavailable)
+magebox logs php -f     # Follow mode
+magebox logs php -n 50  # Show last 50 lines
+```
+
+Log files are located in `~/.magebox/logs/php-fpm/` and are matched by project name:
+
+```
+~/.magebox/logs/php-fpm/
+├── mystore-error.log
+└── mystore-slow.log
+```
+
+### `magebox logs nginx`
+
+View Nginx access and error logs for the current project's domains.
+
+```bash
+magebox logs nginx        # View in multitail split-screen
+magebox logs nginx -f     # Follow mode
+```
+
+Log files are located in `~/.magebox/logs/nginx/` with per-domain files:
 
 ```
 ~/.magebox/logs/nginx/
@@ -160,22 +196,9 @@ MageBox stores per-domain nginx logs for easy debugging:
 └── api.mystore.test-error.log
 ```
 
-Each domain configured in your project gets its own access and error log.
+When multiple domains are configured, multitail shows them in a split-screen layout.
 
-### Viewing Nginx Logs
-
-```bash
-# Watch access log for a specific domain
-tail -f ~/.magebox/logs/nginx/mystore.test-access.log
-
-# Watch error log for a specific domain
-tail -f ~/.magebox/logs/nginx/mystore.test-error.log
-
-# Watch all nginx logs
-tail -f ~/.magebox/logs/nginx/*.log
-```
-
-### Common Errors
+#### Common Nginx Errors
 
 | Error | Likely Cause |
 |-------|-------------|
@@ -183,9 +206,35 @@ tail -f ~/.magebox/logs/nginx/*.log
 | `404 Not Found` | Wrong document root (should be `pub`) |
 | `connect() failed` | PHP-FPM socket not found |
 
-## Combining Both Commands
+### `magebox logs mysql`
 
-For comprehensive debugging, run both commands in separate terminal tabs:
+Stream logs from the MySQL or MariaDB Docker container.
+
+```bash
+magebox logs mysql          # Stream container logs
+magebox logs mysql -n 200   # Show last 200 lines
+```
+
+Uses `docker compose logs` under the hood. Automatically detects whether your project uses MySQL or MariaDB. Press `Ctrl+C` to stop.
+
+### `magebox logs redis`
+
+Stream logs from the Redis Docker container.
+
+```bash
+magebox logs redis          # Stream container logs
+magebox logs redis -n 200   # Show last 200 lines
+```
+
+Uses `docker compose logs` under the hood. Press `Ctrl+C` to stop.
+
+::: tip
+Redis must be configured in your `.magebox.yaml` for this command to work.
+:::
+
+## Combining Commands
+
+For comprehensive debugging, run multiple log commands in separate terminal tabs:
 
 **Terminal 1:**
 ```bash
@@ -194,13 +243,18 @@ magebox logs
 
 **Terminal 2:**
 ```bash
+magebox logs php -f
+```
+
+**Terminal 3:**
+```bash
 magebox report
 ```
 
 This gives you:
-- Real-time log monitoring (system + exceptions)
+- Real-time Magento log monitoring (system + exceptions)
+- PHP-FPM error tracking
 - Instant notification of crash reports
-- Full context when debugging issues
 
 ## Tips
 
@@ -224,9 +278,9 @@ tail -f var/log/system.log | grep "Vendor_Module"
 | `var/log/exception.log` | PHP exceptions and stack traces |
 | `var/log/debug.log` | Debug-level messages (when enabled) |
 | `var/report/*` | Unhandled exception reports with unique IDs |
-| `~/.magebox/logs/nginx/{domain}-access.log` | Per-domain nginx access logs |
-| `~/.magebox/logs/nginx/{domain}-error.log` | Per-domain nginx error logs |
-| `~/.magebox/logs/php-fpm/{project}.log` | PHP-FPM error logs per project |
+| `~/.magebox/logs/nginx/{domain}-access.log` | Per-domain nginx access logs (`magebox logs nginx`) |
+| `~/.magebox/logs/nginx/{domain}-error.log` | Per-domain nginx error logs (`magebox logs nginx`) |
+| `~/.magebox/logs/php-fpm/{project}-error.log` | PHP-FPM error logs per project (`magebox logs php`) |
 
 ### Cleaning Up Reports
 

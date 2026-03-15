@@ -448,11 +448,13 @@ magebox redis info                   # Show server info
 ### Log Viewing
 
 ```bash
-magebox logs                         # Show last 20 lines of all logs
-magebox logs -f                      # Follow mode (live tail)
-magebox logs -n 100                  # Show last 100 lines
-magebox logs system.log              # Specific log file
-magebox logs "exception*"            # Wildcard pattern
+magebox logs                         # Magento system.log + exception.log (multitail)
+magebox logs php                     # PHP-FPM error logs
+magebox logs nginx                   # Nginx access/error logs
+magebox logs mysql                   # MySQL/MariaDB container logs
+magebox logs redis                   # Redis container logs
+magebox logs php -f                  # Follow mode (tail -f)
+magebox logs nginx -n 200            # Show last 200 lines
 ```
 
 ### Custom Commands
@@ -681,7 +683,11 @@ magebox config set portainer true
 | `magebox redis shell` | Open Redis CLI |
 | `magebox redis flush` | Flush Redis data |
 | `magebox redis info` | Show Redis info |
-| `magebox logs [-f] [-n N]` | View/tail logs |
+| `magebox logs` | View Magento system/exception logs |
+| `magebox logs php` | View PHP-FPM logs |
+| `magebox logs nginx` | View Nginx access/error logs |
+| `magebox logs mysql` | Stream MySQL/MariaDB logs |
+| `magebox logs redis` | Stream Redis logs |
 | `magebox varnish status` | Show Varnish status and backend health |
 | `magebox varnish enable` | Enable Varnish for current project |
 | `magebox varnish disable` | Disable Varnish for current project |

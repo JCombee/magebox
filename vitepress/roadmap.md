@@ -12,6 +12,7 @@ The following features have been implemented:
 
 | Feature | Version | Description |
 |---------|---------|-------------|
+| **Service-Specific Logs** | v1.3.0 | `magebox logs php/nginx/mysql/redis` for per-service log tailing |
 | **Isolated PHP-FPM** | v1.2.0 | `magebox php isolate` for dedicated PHP-FPM masters per project |
 | IPv6 DNS Support | v1.2.0 | dnsmasq responds to AAAA queries, fixing 30s DNS delays |
 | PHP System Commands | v1.2.0 | `magebox php system` for PHP_INI_SYSTEM settings management |
@@ -39,17 +40,6 @@ The following features have been implemented:
 | Multi-Domain Support | v0.7.1 | Multiple domains per project with store codes |
 
 ## Planned Features
-
-### Service-Specific Log Tailing
-
-Dedicated log commands for each service:
-
-```bash
-magebox logs php      # PHP-FPM logs
-magebox logs nginx    # Nginx access/error logs
-magebox logs mysql    # MySQL query logs
-magebox logs redis    # Redis logs
-```
 
 ### Performance Profiling Dashboard
 
