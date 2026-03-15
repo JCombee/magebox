@@ -140,7 +140,21 @@ Watch active queries and connections in real time:
 magebox db top
 ```
 
-Refreshes every 2 seconds, showing the MySQL/MariaDB process list. Press `Ctrl+C` to stop.
+Uses [mytop](https://github.com/jzawodn/mytop) for a full-featured TUI when installed, falling back to `mysqladmin processlist` otherwise. Press `Ctrl+C` to stop.
+
+::: tip
+Install mytop for the best experience:
+```bash
+# macOS
+brew install mytop
+
+# Ubuntu/Debian
+sudo apt install mytop
+
+# Fedora
+sudo dnf install mytop
+```
+:::
 
 ## Database Management Tools
 

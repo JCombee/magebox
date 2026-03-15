@@ -584,7 +584,7 @@ Monitor database processes in real time.
 magebox db top
 ```
 
-Shows active MySQL/MariaDB queries, connections, and lock info using `mysqladmin processlist`. Refreshes every 2 seconds.
+Uses [mytop](https://github.com/jzawodn/mytop) when installed for a full-featured TUI, falling back to `mysqladmin processlist` otherwise. Connects to the project's database container automatically.
 
 Press `Ctrl+C` to stop.
 

@@ -545,10 +545,30 @@ func runDbTop(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	fmt.Printf("Monitoring processes on %s (Ctrl+C to stop)\n\n", cli.Highlight(db.ContainerName))
+	// Try mytop on the host first (best TUI experience)
+	if mytopPath, err := exec.LookPath("mytop"); err == nil {
+		fmt.Printf("Monitoring %s via mytop (Ctrl+C to stop)\n\n", cli.Highlight(db.ContainerName))
+		mytopCmd := exec.Command(mytopPath,
+			"--host=127.0.0.1",
+			fmt.Sprintf("--port=%d", db.Port),
+			"--user=root",
+			"--pass="+docker.DefaultDBRootPassword,
+		)
+		mytopCmd.Stdin = os.Stdin
+		mytopCmd.Stdout = os.Stdout
+		mytopCmd.Stderr = os.Stderr
+		return mytopCmd.Run()
+	}
 
-	// Use mysqladmin processlist in a watch-like loop via docker exec
-	// The --sleep flag makes mysqladmin repeat every N seconds
+	// Fallback to mysqladmin processlist inside the container
+	cli.PrintWarning("mytop not found, falling back to mysqladmin processlist")
+	cli.PrintInfo("Install mytop for a better experience:")
+	fmt.Println("  macOS:   brew install mytop")
+	fmt.Println("  Ubuntu:  sudo apt install mytop")
+	fmt.Println("  Fedora:  sudo dnf install mytop")
+	fmt.Println()
+	fmt.Printf("Monitoring %s (Ctrl+C to stop)\n\n", cli.Highlight(db.ContainerName))
+
 	topCmd := exec.Command("docker", "exec", "-it", db.ContainerName,
 		"mysqladmin", "-uroot", "-p"+docker.DefaultDBRootPassword,
 		"processlist", "--sleep=2", "--verbose")
