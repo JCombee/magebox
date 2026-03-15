@@ -107,6 +107,10 @@ func (l *Loader) merge(main, local *Config) *Config {
 		result.Domains = local.Domains
 	}
 
+	if local.ComposeFile != "" {
+		result.ComposeFile = local.ComposeFile
+	}
+
 	// Merge services
 	result.Services = l.mergeServices(main.Services, local.Services)
 

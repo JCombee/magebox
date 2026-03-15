@@ -1,11 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"qoliber/magebox/internal/cli"
+	"qoliber/magebox/internal/docker"
 	"qoliber/magebox/internal/project"
 )
 
@@ -107,6 +112,55 @@ func startProject(mgr *project.Manager, projectPath string, verbose bool) error 
 		}
 	}
 
+	// Handle project-specific compose file
+	if cfg.ComposeFile != "" {
+		composeFile := cfg.ComposeFile
+		if !filepath.IsAbs(composeFile) {
+			composeFile = filepath.Join(projectPath, composeFile)
+		}
+		if _, err := os.Stat(composeFile); err == nil {
+			if err := promptComposeUp(composeFile); err != nil {
+				cli.PrintWarning("Custom containers: %v", err)
+			}
+		} else {
+			cli.PrintWarning("Compose file not found: %s", composeFile)
+		}
+	}
+
+	return nil
+}
+
+// promptComposeUp asks the user whether to start project-specific Docker containers
+func promptComposeUp(composeFile string) error {
+	services, err := docker.ProjectComposeServices(composeFile)
+	if err != nil {
+		return fmt.Errorf("failed to read compose file: %w", err)
+	}
+	if len(services) == 0 {
+		return nil
+	}
+
+	fmt.Println()
+	cli.PrintInfo("Project has custom Docker containers (%s):", cli.Path(composeFile))
+	for _, svc := range services {
+		fmt.Printf("  %s %s\n", cli.Bullet(""), svc)
+	}
+	fmt.Print("Start these containers? [Y/n] ")
+
+	reader := bufio.NewReader(os.Stdin)
+	answer, _ := reader.ReadString('\n')
+	answer = strings.TrimSpace(strings.ToLower(answer))
+
+	if answer != "" && answer != "y" && answer != "yes" {
+		cli.PrintInfo("Skipped custom containers")
+		return nil
+	}
+
+	fmt.Println()
+	if err := docker.ProjectComposeUp(composeFile); err != nil {
+		return fmt.Errorf("failed to start containers: %w", err)
+	}
+	cli.PrintSuccess("Custom containers started and connected to MageBox network")
 	return nil
 }
 

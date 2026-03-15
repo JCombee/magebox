@@ -54,6 +54,9 @@ services:
   mailpit: true
   varnish: false
 
+# Custom Docker containers (optional)
+compose_file: docker-compose.yml
+
 # Environment variables
 env:
   MAGE_MODE: developer
@@ -228,6 +231,53 @@ services:
 services:
   varnish: true  # Enable/disable
 ```
+
+### compose_file
+
+Path to a project-specific `docker-compose.yml` for custom Docker containers:
+
+```yaml
+compose_file: docker-compose.yml
+```
+
+When set, `magebox start` and `magebox stop` will prompt you to start/stop these containers alongside the standard MageBox services. The containers are automatically connected to the MageBox Docker network, so they can communicate with MySQL, Redis, OpenSearch, and other MageBox services.
+
+**Example:** A Magento project with a Python microservice for PDF generation:
+
+```yaml
+name: mystore
+php: "8.3"
+domains:
+  - host: mystore.test
+services:
+  mysql: "8.0"
+  redis: true
+compose_file: docker-compose.yml
+```
+
+```yaml
+# docker-compose.yml (in project root)
+services:
+  pdf-service:
+    build: ./pdf-service
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./storage:/data
+    restart: unless-stopped
+```
+
+After `magebox start`, the `pdf-service` container can reach MySQL at `magebox-mysql-8.0:3306` on the shared network, and your PHP application can reach the PDF service at `localhost:8001`.
+
+::: tip
+The path is relative to the project root. Use absolute paths if the compose file is elsewhere.
+:::
+
+::: info Confirmation Prompt
+MageBox always asks for confirmation before starting or stopping custom containers, so they won't be accidentally disrupted.
+:::
+
+---
 
 ### env
 

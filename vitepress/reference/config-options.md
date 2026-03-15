@@ -97,6 +97,22 @@ Use either `mysql` OR `mariadb`, not both.
 
 ---
 
+### compose_file
+
+`string`
+
+Path to a project-specific Docker Compose file for custom containers.
+
+```yaml
+compose_file: docker-compose.yml
+```
+
+When configured, `magebox start` and `magebox stop` prompt to start/stop these containers. They are automatically connected to the MageBox Docker network so they can communicate with MySQL, Redis, and other MageBox services.
+
+The path is relative to the project root unless an absolute path is given.
+
+---
+
 ### env
 
 `object`
@@ -325,6 +341,8 @@ services:
   rabbitmq: true
   mailpit: true
   varnish: false
+
+compose_file: docker-compose.yml
 
 env:
   MAGE_MODE: developer

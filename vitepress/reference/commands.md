@@ -56,6 +56,7 @@ This command:
 4. Updates DNS (if hosts mode)
 5. Generates SSL certificates (if needed)
 6. Reloads Nginx
+7. Prompts to start custom Docker containers (if `compose_file` is configured)
 
 **Options:**
 - `--all` - Start all discovered MageBox projects at once
@@ -72,7 +73,7 @@ magebox stop --all      # Stop all running projects
 magebox stop --dry-run  # Preview what would happen
 ```
 
-Stops PHP-FPM pool and removes Nginx configuration.
+Stops PHP-FPM pool and removes Nginx configuration. If `compose_file` is configured, prompts to stop custom Docker containers first.
 
 **Options:**
 - `--all` - Stop all running MageBox projects at once

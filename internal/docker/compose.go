@@ -961,3 +961,63 @@ func (c *DockerController) GetAllServices() ([]string, error) {
 	}
 	return services, nil
 }
+
+// ProjectComposeUp starts containers from a project-specific docker-compose file
+// and connects them to the MageBox network
+func ProjectComposeUp(composeFile string) error {
+	// Ensure the magebox network exists
+	ensureCmd := exec.Command("docker", "network", "create", "magebox_magebox")
+	_ = ensureCmd.Run() // ignore error if already exists
+
+	// Start the services
+	cmd := BuildComposeCmd(composeFile, "up", "-d")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	// Get running container IDs for the compose project
+	listCmd := BuildComposeCmd(composeFile, "ps", "-q")
+	output, err := listCmd.Output()
+	if err != nil {
+		return nil // services started, network attachment is best-effort
+	}
+
+	// Connect each container to the magebox network
+	for _, containerID := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+		if containerID == "" {
+			continue
+		}
+		// Connect to magebox network (ignore error if already connected)
+		connectCmd := exec.Command("docker", "network", "connect", "magebox_magebox", containerID)
+		_ = connectCmd.Run()
+	}
+
+	return nil
+}
+
+// ProjectComposeDown stops containers from a project-specific docker-compose file
+func ProjectComposeDown(composeFile string) error {
+	cmd := BuildComposeCmd(composeFile, "down")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// ProjectComposeServices returns the list of service names in a project compose file
+func ProjectComposeServices(composeFile string) ([]string, error) {
+	cmd := BuildComposeCmd(composeFile, "config", "--services")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	var services []string
+	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+		if line != "" {
+			services = append(services, line)
+		}
+	}
+	return services, nil
+}

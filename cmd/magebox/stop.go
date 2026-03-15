@@ -1,12 +1,17 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"qoliber/magebox/internal/cli"
 	"qoliber/magebox/internal/config"
+	"qoliber/magebox/internal/docker"
 	"qoliber/magebox/internal/project"
 )
 
@@ -50,6 +55,20 @@ func runStop(cmd *cobra.Command, args []string) error {
 		return stopDryRunSingle(cwd)
 	}
 
+	// Handle project-specific compose file before stopping
+	cfg, _ := config.LoadFromPath(cwd)
+	if cfg != nil && cfg.ComposeFile != "" {
+		composeFile := cfg.ComposeFile
+		if !filepath.IsAbs(composeFile) {
+			composeFile = filepath.Join(cwd, composeFile)
+		}
+		if _, err := os.Stat(composeFile); err == nil {
+			if err := promptComposeDown(composeFile); err != nil {
+				cli.PrintWarning("Custom containers: %v", err)
+			}
+		}
+	}
+
 	cli.PrintInfo("Stopping MageBox services...")
 
 	if err := mgr.Stop(cwd); err != nil {
@@ -58,6 +77,39 @@ func runStop(cmd *cobra.Command, args []string) error {
 	}
 
 	cli.PrintSuccess("Project stopped successfully!")
+	return nil
+}
+
+// promptComposeDown asks the user whether to stop project-specific Docker containers
+func promptComposeDown(composeFile string) error {
+	services, err := docker.ProjectComposeServices(composeFile)
+	if err != nil {
+		return nil // can't read file, skip silently
+	}
+	if len(services) == 0 {
+		return nil
+	}
+
+	cli.PrintInfo("Project has custom Docker containers (%s):", cli.Path(composeFile))
+	for _, svc := range services {
+		fmt.Printf("  %s %s\n", cli.Bullet(""), svc)
+	}
+	fmt.Print("Stop these containers? [Y/n] ")
+
+	reader := bufio.NewReader(os.Stdin)
+	answer, _ := reader.ReadString('\n')
+	answer = strings.TrimSpace(strings.ToLower(answer))
+
+	if answer != "" && answer != "y" && answer != "yes" {
+		cli.PrintInfo("Skipped custom containers")
+		return nil
+	}
+
+	fmt.Println()
+	if err := docker.ProjectComposeDown(composeFile); err != nil {
+		return fmt.Errorf("failed to stop containers: %w", err)
+	}
+	cli.PrintSuccess("Custom containers stopped")
 	return nil
 }
 

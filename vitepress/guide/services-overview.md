@@ -222,6 +222,24 @@ Volumes are named:
 - `magebox_opensearch_data`
 - etc.
 
+## Custom Docker Containers
+
+If your project needs additional Docker services beyond what MageBox provides (e.g., a Python microservice, a Node.js API, a headless CMS), you can attach a project-specific `docker-compose.yml`:
+
+```yaml
+# .magebox.yaml
+compose_file: docker-compose.yml
+```
+
+When you run `magebox start`, MageBox will list the custom services and ask for confirmation before starting them. The containers are automatically connected to the MageBox Docker network, so they can:
+
+- **Reach MageBox services** like MySQL (`magebox-mysql-8.0:3306`), Redis (`magebox-redis:6379`), etc.
+- **Be reached from your PHP application** via `localhost:<mapped-port>`
+
+On `magebox stop`, MageBox asks again before stopping the custom containers.
+
+See [Project Configuration](/guide/project-config#compose-file) for a full example.
+
 ## Resource Management
 
 Docker services use system resources. Monitor with:

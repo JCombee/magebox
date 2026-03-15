@@ -23,8 +23,9 @@ type Config struct {
 	Isolated bool               `yaml:"isolated,omitempty"` // Use dedicated PHP-FPM master for this project
 	Services Services           `yaml:"services"`
 	Env      map[string]string  `yaml:"env,omitempty"`
-	Commands map[string]Command `yaml:"commands,omitempty"`
-	Testing  *TestingConfig     `yaml:"testing,omitempty"`
+	Commands    map[string]Command `yaml:"commands,omitempty"`
+	Testing     *TestingConfig     `yaml:"testing,omitempty"`
+	ComposeFile string             `yaml:"compose_file,omitempty"` // Path to project-specific docker-compose.yml
 }
 
 // GetType returns the project type, defaulting to "magento"
