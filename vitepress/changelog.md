@@ -2,6 +2,21 @@
 
 All notable changes to MageBox will be documented here.
 
+## [1.7.1] - 2026-03-17
+
+### New Features
+
+- **Varnish Log Streaming** - New `magebox varnish logs` and `magebox logs varnish` commands for streaming varnishlog output from the container.
+- **Varnish Request Histogram** - New `magebox varnish hist` (alias: `history`) command showing a live histogram of request processing times via varnishhist.
+- **Varnish Admin CLI** - New `magebox varnish admin` command for interactive or single-command varnishadm access (e.g., `magebox varnish admin backend.list`).
+- **VCL Import Backend Host Check** - `magebox varnish vcl-import` now detects when backend `.host` is set to `localhost` or `127.0.0.1` and offers to rewrite it to `host.docker.internal` so Varnish in Docker can reach Nginx on the host.
+- **Varnish Enable Health Check** - `magebox varnish enable` now verifies the container is healthy after starting and shows container logs on failure. Also detects when Varnish is enabled in config but not running.
+
+### Bug Fixes
+
+- **Elasticvue Port Conflict** - Moved Elasticvue from port 8080 to 8090 to avoid conflict with the Varnish backend port (Nginx listens on 8080 for Varnish).
+- **Global Start Compose Regeneration** - `magebox global start` now regenerates the docker-compose file before starting, so config changes take effect without requiring a full bootstrap.
+
 ## [1.7.0] - 2026-03-17
 
 ### New Features
