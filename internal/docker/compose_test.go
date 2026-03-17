@@ -372,10 +372,13 @@ func TestComposeService_OpenSearch(t *testing.T) {
 		Version: "2.12",
 		Memory:  "2g",
 	}
-	svc := g.getOpenSearchService(svcCfg)
+	svc := g.getOpenSearchService(svcCfg, false)
 
 	if !strings.Contains(svc.Image, "opensearch") {
 		t.Errorf("Image = %v, should contain opensearch", svc.Image)
+	}
+	if len(svc.Ports) != 1 || !strings.Contains(svc.Ports[0], "9252:9200") {
+		t.Errorf("Ports = %v, want [9252:9200]", svc.Ports)
 	}
 	if svc.Environment["DISABLE_SECURITY_PLUGIN"] != "true" {
 		t.Error("DISABLE_SECURITY_PLUGIN should be true")
@@ -388,6 +391,95 @@ func TestComposeService_OpenSearch(t *testing.T) {
 	}
 	if !strings.Contains(svc.Command, "analysis-phonetic") {
 		t.Error("Command should install analysis-phonetic plugin")
+	}
+}
+
+func TestComposeService_OpenSearch_WithStandardPort(t *testing.T) {
+	g, _ := setupTestComposeGenerator(t)
+
+	svcCfg := &config.ServiceConfig{
+		Enabled: true,
+		Version: "2.19.4",
+	}
+	svc := g.getOpenSearchService(svcCfg, true)
+
+	if len(svc.Ports) != 2 {
+		t.Fatalf("Ports = %v, want 2 port mappings (version-specific + standard)", svc.Ports)
+	}
+	if !strings.Contains(svc.Ports[0], "9259:9200") {
+		t.Errorf("Ports[0] = %v, want 9259:9200", svc.Ports[0])
+	}
+	if !strings.Contains(svc.Ports[1], "9200:9200") {
+		t.Errorf("Ports[1] = %v, want 9200:9200", svc.Ports[1])
+	}
+}
+
+func TestComposeService_Elasticsearch_WithStandardPort(t *testing.T) {
+	g, _ := setupTestComposeGenerator(t)
+
+	svcCfg := &config.ServiceConfig{
+		Enabled: true,
+		Version: "7.17",
+	}
+	svc := g.getElasticsearchService(svcCfg, true)
+
+	if len(svc.Ports) != 2 {
+		t.Fatalf("Ports = %v, want 2 port mappings (version-specific + standard)", svc.Ports)
+	}
+	if !strings.Contains(svc.Ports[0], "9457:9200") {
+		t.Errorf("Ports[0] = %v, want 9457:9200", svc.Ports[0])
+	}
+	if !strings.Contains(svc.Ports[1], "9200:9200") {
+		t.Errorf("Ports[1] = %v, want 9200:9200", svc.Ports[1])
+	}
+}
+
+func TestGetOpenSearchPort(t *testing.T) {
+	tests := []struct {
+		version  string
+		expected int
+	}{
+		{"1.3", 9223},
+		{"2.5", 9245},
+		{"2.11", 9251},
+		{"2.12", 9252},
+		{"2.19", 9259},
+		{"2.19.4", 9259}, // patch version should be stripped
+		{"3.0", 9260},
+		{"3.3", 9263},
+		{"4.0", 9280}, // unknown version uses formula
+		{"1.0", 9220}, // unknown version uses formula
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.version, func(t *testing.T) {
+			if got := GetOpenSearchPort(tt.version); got != tt.expected {
+				t.Errorf("GetOpenSearchPort(%v) = %v, want %v", tt.version, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGetElasticsearchPort(t *testing.T) {
+	tests := []struct {
+		version  string
+		expected int
+	}{
+		{"7.6", 9446},
+		{"7.17", 9457},
+		{"8.0", 9460},
+		{"8.11", 9471},
+		{"8.17", 9477},
+		{"8.11.3", 9471}, // patch version should be stripped
+		{"9.0", 9480},    // unknown version uses formula
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.version, func(t *testing.T) {
+			if got := GetElasticsearchPort(tt.version); got != tt.expected {
+				t.Errorf("GetElasticsearchPort(%v) = %v, want %v", tt.version, got, tt.expected)
+			}
+		})
 	}
 }
 

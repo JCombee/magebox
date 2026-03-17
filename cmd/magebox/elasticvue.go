@@ -97,7 +97,8 @@ func runElasticvueEnable(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	fmt.Printf("  Web UI: %s\n", cli.Highlight("http://localhost:8080"))
 	fmt.Println()
-	cli.PrintInfo("Add your cluster in the Elasticvue UI using http://localhost:9200")
+	cli.PrintInfo("Add your cluster in the Elasticvue UI using http://localhost:<port>")
+	cli.PrintInfo("Check 'magebox status' or the ports reference for your search engine's port")
 
 	return nil
 }

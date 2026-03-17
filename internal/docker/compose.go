@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -102,6 +103,9 @@ const (
 	// StandardDBPort is the standard MySQL/MariaDB port (3306) that is additionally
 	// exposed for the default database service, alongside its version-specific port.
 	StandardDBPort = 3306
+	// StandardSearchPort is the standard OpenSearch/Elasticsearch port (9200) that is
+	// additionally exposed for the default search service, alongside its version-specific port.
+	StandardSearchPort = 9200
 )
 
 // Default RabbitMQ credentials
@@ -191,11 +195,13 @@ func (g *ComposeGenerator) GenerateGlobalServices(configs []*config.Config) erro
 	// Collect all required services from all projects
 	requiredServices := g.collectRequiredServices(configs)
 
-	// Load global config to determine the default database version
-	// The default gets an additional standard port (3306) mapping
+	// Load global config to determine default service versions.
+	// The default gets an additional standard port mapping.
 	globalCfg, _ := config.LoadGlobalConfig(g.platform.HomeDir)
 	defaultMySQL := "8.0"
 	defaultMariaDB := ""
+	defaultOpenSearch := ""
+	defaultElasticsearch := ""
 	if globalCfg != nil {
 		if globalCfg.DefaultServices.MySQL != "" {
 			defaultMySQL = globalCfg.DefaultServices.MySQL
@@ -203,10 +209,18 @@ func (g *ComposeGenerator) GenerateGlobalServices(configs []*config.Config) erro
 		if globalCfg.DefaultServices.MariaDB != "" {
 			defaultMariaDB = globalCfg.DefaultServices.MariaDB
 		}
+		if globalCfg.DefaultServices.OpenSearch != "" {
+			defaultOpenSearch = globalCfg.DefaultServices.OpenSearch
+		}
+		if globalCfg.DefaultServices.Elasticsearch != "" {
+			defaultElasticsearch = globalCfg.DefaultServices.Elasticsearch
+		}
 	}
 
 	// Determine if there's only one DB service total (always gets standard port)
 	totalDBServices := len(requiredServices.mysql) + len(requiredServices.mariadb)
+	// Determine if there's only one search service total (always gets standard port 9200)
+	totalSearchServices := len(requiredServices.opensearch) + len(requiredServices.elasticsearch)
 
 	// Add MySQL services
 	for version, svcCfg := range requiredServices.mysql {
@@ -232,7 +246,8 @@ func (g *ComposeGenerator) GenerateGlobalServices(configs []*config.Config) erro
 	// Add OpenSearch services
 	for version, svcCfg := range requiredServices.opensearch {
 		serviceName := fmt.Sprintf("opensearch%s", strings.ReplaceAll(version, ".", ""))
-		compose.Services[serviceName] = g.getOpenSearchService(svcCfg)
+		addStdPort := (totalSearchServices == 1) || (version == defaultOpenSearch)
+		compose.Services[serviceName] = g.getOpenSearchService(svcCfg, addStdPort)
 		compose.Volumes[fmt.Sprintf("opensearch%s_data", strings.ReplaceAll(version, ".", ""))] = ComposeVolume{}
 		compose.Volumes[fmt.Sprintf("opensearch%s_plugins", strings.ReplaceAll(version, ".", ""))] = ComposeVolume{}
 	}
@@ -240,7 +255,8 @@ func (g *ComposeGenerator) GenerateGlobalServices(configs []*config.Config) erro
 	// Add Elasticsearch services
 	for version, svcCfg := range requiredServices.elasticsearch {
 		serviceName := fmt.Sprintf("elasticsearch%s", strings.ReplaceAll(version, ".", ""))
-		compose.Services[serviceName] = g.getElasticsearchService(svcCfg)
+		addStdPort := len(requiredServices.opensearch) == 0 && ((totalSearchServices == 1) || (version == defaultElasticsearch))
+		compose.Services[serviceName] = g.getElasticsearchService(svcCfg, addStdPort)
 		compose.Volumes[fmt.Sprintf("elasticsearch%s_data", strings.ReplaceAll(version, ".", ""))] = ComposeVolume{}
 		compose.Volumes[fmt.Sprintf("elasticsearch%s_plugins", strings.ReplaceAll(version, ".", ""))] = ComposeVolume{}
 	}
@@ -443,9 +459,9 @@ func (g *ComposeGenerator) getRedisService() ComposeService {
 }
 
 // getOpenSearchService returns an OpenSearch service configuration
-func (g *ComposeGenerator) getOpenSearchService(svcCfg *config.ServiceConfig) ComposeService {
+func (g *ComposeGenerator) getOpenSearchService(svcCfg *config.ServiceConfig, addStandardPort bool) ComposeService {
 	version := svcCfg.Version
-	port := g.getOpenSearchPort(version)
+	port := GetOpenSearchPort(version)
 
 	// Default to 1GB if not specified
 	memory := "1g"
@@ -455,10 +471,15 @@ func (g *ComposeGenerator) getOpenSearchService(svcCfg *config.ServiceConfig) Co
 
 	heapSize := fmt.Sprintf("-Xms%s -Xmx%s", memory, memory)
 
+	ports := []string{fmt.Sprintf("%d:9200", port)}
+	if addStandardPort && port != StandardSearchPort {
+		ports = append(ports, fmt.Sprintf("%d:9200", StandardSearchPort))
+	}
+
 	return ComposeService{
 		ContainerName: fmt.Sprintf("magebox-opensearch-%s", version),
 		Image:         fmt.Sprintf("opensearchproject/opensearch:%s", version),
-		Ports:         []string{fmt.Sprintf("%d:9200", port)},
+		Ports:         ports,
 		Environment: map[string]string{
 			"discovery.type":                                    "single-node",
 			"DISABLE_SECURITY_PLUGIN":                           "true",
@@ -476,9 +497,9 @@ func (g *ComposeGenerator) getOpenSearchService(svcCfg *config.ServiceConfig) Co
 }
 
 // getElasticsearchService returns an Elasticsearch service configuration
-func (g *ComposeGenerator) getElasticsearchService(svcCfg *config.ServiceConfig) ComposeService {
+func (g *ComposeGenerator) getElasticsearchService(svcCfg *config.ServiceConfig, addStandardPort bool) ComposeService {
 	version := svcCfg.Version
-	port := g.getElasticsearchPort(version)
+	port := GetElasticsearchPort(version)
 
 	// Default to 1GB if not specified
 	memory := "1g"
@@ -488,10 +509,15 @@ func (g *ComposeGenerator) getElasticsearchService(svcCfg *config.ServiceConfig)
 
 	heapSize := fmt.Sprintf("-Xms%s -Xmx%s", memory, memory)
 
+	ports := []string{fmt.Sprintf("%d:9200", port)}
+	if addStandardPort && port != StandardSearchPort {
+		ports = append(ports, fmt.Sprintf("%d:9200", StandardSearchPort))
+	}
+
 	return ComposeService{
 		ContainerName: fmt.Sprintf("magebox-elasticsearch-%s", version),
 		Image:         fmt.Sprintf("elasticsearch:%s", version),
-		Ports:         []string{fmt.Sprintf("%d:9200", port)},
+		Ports:         ports,
 		Environment: map[string]string{
 			"discovery.type":         "single-node",
 			"xpack.security.enabled": "false",
@@ -643,21 +669,75 @@ func (g *ComposeGenerator) getMariaDBPort(version string) int {
 	return 33106 // default
 }
 
-func (g *ComposeGenerator) getOpenSearchPort(version string) int {
-	// Use 9200 for the first version, 9201, 9202, etc. for others
-	return 9200
+// normalizeSearchVersion extracts major.minor from a version string like "2.19.4"
+func normalizeSearchVersion(version string) string {
+	parts := strings.SplitN(version, ".", 3)
+	if len(parts) >= 2 {
+		return parts[0] + "." + parts[1]
+	}
+	return version
 }
 
-func (g *ComposeGenerator) getElasticsearchPort(version string) int {
-	ports := map[string]int{
-		"7.17": 9217,
-		"8.0":  9280,
-		"8.11": 9281,
+// computeSearchPort calculates a port from base + major*20 + minor.
+// This guarantees unique ports for versions where major < 5 and minor < 20.
+func computeSearchPort(basePort int, version string) int {
+	normalized := normalizeSearchVersion(version)
+	parts := strings.SplitN(normalized, ".", 2)
+	if len(parts) == 2 {
+		major, err1 := strconv.Atoi(parts[0])
+		minor, err2 := strconv.Atoi(parts[1])
+		if err1 == nil && err2 == nil {
+			return basePort + major*20 + minor
+		}
 	}
-	if port, ok := ports[version]; ok {
+	return basePort
+}
+
+// GetOpenSearchPort returns the host port for an OpenSearch version.
+// Port convention: 9200 + major*20 + minor (e.g., OS 2.19 → 9259, OS 3.3 → 9263).
+func GetOpenSearchPort(version string) int {
+	normalized := normalizeSearchVersion(version)
+	ports := map[string]int{
+		"1.3":  9223,
+		"2.5":  9245,
+		"2.10": 9250,
+		"2.11": 9251,
+		"2.12": 9252,
+		"2.13": 9253,
+		"2.15": 9255,
+		"2.17": 9257,
+		"2.19": 9259,
+		"3.0":  9260,
+		"3.3":  9263,
+	}
+	if port, ok := ports[normalized]; ok {
 		return port
 	}
-	return 9200
+	return computeSearchPort(9200, normalized)
+}
+
+// GetElasticsearchPort returns the host port for an Elasticsearch version.
+// Port convention: 9300 + major*20 + minor (e.g., ES 7.17 → 9457, ES 8.11 → 9471).
+func GetElasticsearchPort(version string) int {
+	normalized := normalizeSearchVersion(version)
+	ports := map[string]int{
+		"7.6":  9446,
+		"7.9":  9449,
+		"7.10": 9450,
+		"7.16": 9456,
+		"7.17": 9457,
+		"8.0":  9460,
+		"8.4":  9464,
+		"8.7":  9467,
+		"8.11": 9471,
+		"8.14": 9474,
+		"8.15": 9475,
+		"8.17": 9477,
+	}
+	if port, ok := ports[normalized]; ok {
+		return port
+	}
+	return computeSearchPort(9300, normalized)
 }
 
 // ComposeDir returns the compose directory path
@@ -895,7 +975,7 @@ func (g *ComposeGenerator) GenerateDefaultServices(globalCfg *config.GlobalConfi
 			Enabled: true,
 			Version: version,
 		}
-		compose.Services[serviceName] = g.getOpenSearchService(svcCfg)
+		compose.Services[serviceName] = g.getOpenSearchService(svcCfg, true)
 		compose.Volumes[fmt.Sprintf("opensearch%s_data", strings.ReplaceAll(version, ".", ""))] = ComposeVolume{}
 		compose.Volumes[fmt.Sprintf("opensearch%s_plugins", strings.ReplaceAll(version, ".", ""))] = ComposeVolume{}
 	}

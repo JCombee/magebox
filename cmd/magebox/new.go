@@ -13,6 +13,7 @@ import (
 
 	"qoliber/magebox/internal/cli"
 	"qoliber/magebox/internal/config"
+	"qoliber/magebox/internal/docker"
 	libconfig "qoliber/magebox/internal/lib/config"
 	"qoliber/magebox/internal/nginx"
 	"qoliber/magebox/internal/php"
@@ -90,8 +91,6 @@ const (
 	OpenSearchReadinessMaxRetries = 30
 	// OpenSearchReadinessRetryInterval is the time between readiness checks
 	OpenSearchReadinessRetryInterval = 2 * time.Second
-	// OpenSearchDefaultPort is the default port for OpenSearch
-	OpenSearchDefaultPort = 9200
 )
 
 // Default service versions for quick install
@@ -785,19 +784,21 @@ commands:
 
 	// Add search engine config
 	if searchEngine == "opensearch" {
-		installCmd += ` \
+		searchPort := docker.GetOpenSearchPort(searchVersion)
+		installCmd += fmt.Sprintf(` \
     --search-engine=opensearch \
     --opensearch-host=127.0.0.1 \
-    --opensearch-port=9200 \
+    --opensearch-port=%d \
     --opensearch-index-prefix=magento2 \
-    --opensearch-timeout=15`
+    --opensearch-timeout=15`, searchPort)
 	} else if searchEngine == "elasticsearch" {
-		installCmd += ` \
+		searchPort := docker.GetElasticsearchPort(searchVersion)
+		installCmd += fmt.Sprintf(` \
     --search-engine=elasticsearch7 \
     --elasticsearch-host=127.0.0.1 \
-    --elasticsearch-port=9200 \
+    --elasticsearch-port=%d \
     --elasticsearch-index-prefix=magento2 \
-    --elasticsearch-timeout=15`
+    --elasticsearch-timeout=15`, searchPort)
 	}
 
 	// Add Redis config
@@ -1099,7 +1100,8 @@ commands:
 	fmt.Println()
 	cli.PrintInfo("Waiting for OpenSearch to be ready...")
 	dbPort := "33080" // MySQL 8.0 default port
-	opensearchURL := fmt.Sprintf("http://127.0.0.1:%d", OpenSearchDefaultPort)
+	opensearchPort := docker.GetOpenSearchPort(searchVersion)
+	opensearchURL := fmt.Sprintf("http://127.0.0.1:%d", opensearchPort)
 	for i := 0; i < OpenSearchReadinessMaxRetries; i++ {
 		checkCmd := exec.Command("curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", opensearchURL)
 		output, err := checkCmd.Output()
@@ -1146,7 +1148,7 @@ commands:
 		"--use-rewrites=1",
 		"--search-engine=opensearch",
 		"--opensearch-host=127.0.0.1",
-		fmt.Sprintf("--opensearch-port=%d", OpenSearchDefaultPort),
+		fmt.Sprintf("--opensearch-port=%d", opensearchPort),
 		"--opensearch-index-prefix=magento2",
 		"--opensearch-timeout=15",
 	}
