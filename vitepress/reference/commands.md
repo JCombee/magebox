@@ -718,6 +718,8 @@ magebox db snapshot delete mybackup
 
 ## Redis Commands
 
+These commands work with both Redis and Valkey.
+
 ### `magebox redis shell`
 
 Open Redis CLI.
@@ -730,7 +732,7 @@ magebox redis shell
 
 ### `magebox redis flush`
 
-Clear all Redis data.
+Clear all Redis/Valkey data.
 
 ```bash
 magebox redis flush
@@ -740,7 +742,7 @@ magebox redis flush
 
 ### `magebox redis info`
 
-Show Redis statistics.
+Show Redis/Valkey statistics.
 
 ```bash
 magebox redis info
@@ -866,14 +868,14 @@ Auto-detects whether the project uses MySQL or MariaDB.
 
 ### `magebox logs redis`
 
-Stream Redis Docker container logs.
+Stream Redis (or Valkey) Docker container logs.
 
 ```bash
 magebox logs redis          # Stream logs (Ctrl+C to stop)
 magebox logs redis -n 200   # Show last 200 lines
 ```
 
-Requires Redis to be configured in `.magebox.yaml`.
+Requires Redis or Valkey to be configured in `.magebox.yaml`.
 
 ---
 

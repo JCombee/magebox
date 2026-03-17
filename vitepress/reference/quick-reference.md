@@ -122,8 +122,8 @@ magebox docker up          # Start Docker services
 magebox docker down        # Stop Docker services
 magebox docker status      # Check container status
 
-# Redis
-magebox redis flush        # Clear all Redis data
+# Redis (also works with Valkey)
+magebox redis flush        # Clear all Redis/Valkey data
 magebox redis cli          # Redis CLI access
 
 # Varnish
@@ -164,7 +164,7 @@ magebox dns status         # Check DNS configuration
 |---------|------|------|------|----------|
 | MySQL 8.0 | localhost | 33080 | root | magebox |
 | MariaDB 10.6 | localhost | 33106 | root | magebox |
-| Redis | localhost | 6379 | - | - |
+| Redis/Valkey | localhost | 6379 | - | - |
 | RabbitMQ | localhost | 15672 | guest | guest |
 | Mailpit | localhost | 8025 | - | - |
 

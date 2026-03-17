@@ -6,7 +6,7 @@ Quick answers to common questions about MageBox.
 
 ### What is MageBox?
 
-MageBox is a fast, native Magento 2 development environment. Unlike Docker-based solutions that containerize everything, MageBox runs PHP and Nginx natively on your machine for maximum performance, while using Docker only for supporting services (MySQL, Redis, OpenSearch).
+MageBox is a fast, native Magento 2 development environment. Unlike Docker-based solutions that containerize everything, MageBox runs PHP and Nginx natively on your machine for maximum performance, while using Docker only for supporting services (MySQL, Redis/Valkey, OpenSearch).
 
 ### How is MageBox different from Warden, DDEV, or Valet?
 
@@ -41,7 +41,7 @@ PHP 8.1, 8.2, 8.3, and 8.4. Each project can use a different PHP version simulta
 
 ### Do I need Docker installed?
 
-Yes, Docker is required for database, Redis, OpenSearch, and other supporting services. MageBox supports Docker Desktop, OrbStack, Colima, and Rancher Desktop.
+Yes, Docker is required for database, Redis/Valkey, OpenSearch, and other supporting services. MageBox supports Docker Desktop, OrbStack, Colima, and Rancher Desktop.
 
 ### Why does bootstrap need sudo?
 
@@ -74,7 +74,7 @@ Typical improvement: **2-5x faster** page loads compared to full Docker setups.
 
 1. **Disable Xdebug** when not debugging: `magebox xdebug off`
 2. **Use OPcache** (enabled by default)
-3. **Use Redis** for sessions and cache
+3. **Use Redis/Valkey** for sessions and cache
 4. **Enable Varnish** for full-page caching
 
 Quick mode switch:
@@ -87,7 +87,7 @@ magebox dev    # Development mode: debugging enabled
 
 1. Run `magebox status` to verify services are running
 2. Check if Xdebug is enabled: `magebox xdebug status`
-3. Verify Redis is being used (not file cache)
+3. Verify Redis/Valkey is being used (not file cache)
 4. Profile with Blackfire: `magebox blackfire on`
 
 ---

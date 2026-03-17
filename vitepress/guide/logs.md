@@ -219,7 +219,7 @@ Uses `docker compose logs` under the hood. Automatically detects whether your pr
 
 ### `magebox logs redis`
 
-Stream logs from the Redis Docker container.
+Stream logs from the Redis (or Valkey) Docker container.
 
 ```bash
 magebox logs redis          # Stream container logs
@@ -229,7 +229,7 @@ magebox logs redis -n 200   # Show last 200 lines
 Uses `docker compose logs` under the hood. Press `Ctrl+C` to stop.
 
 ::: tip
-Redis must be configured in your `.magebox.yaml` for this command to work.
+Redis or Valkey must be configured in your `.magebox.yaml` for this command to work.
 :::
 
 ## Combining Commands
