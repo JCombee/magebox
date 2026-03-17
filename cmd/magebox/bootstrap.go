@@ -877,6 +877,40 @@ func runBootstrap(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Offer to install autostart service
+	fmt.Println(cli.Header("Autostart Service"))
+
+	mageboxBin, binErr := getMageboxBinary()
+	if binErr != nil {
+		cli.PrintWarning("Could not determine magebox binary path: %v", binErr)
+	} else {
+		fmt.Println("  MageBox can install a service that automatically starts all")
+		fmt.Println("  global services and projects on boot/login.")
+		fmt.Println()
+		fmt.Print("Install autostart service? [Y/n]: ")
+		reader := bufio.NewReader(os.Stdin)
+		answer, _ := reader.ReadString('\n')
+		answer = strings.TrimSpace(strings.ToLower(answer))
+
+		if answer == "" || answer == "y" || answer == "yes" {
+			fmt.Println()
+			switch p.Type {
+			case platform.Linux:
+				if err := installSystemdService(mageboxBin); err != nil {
+					cli.PrintWarning("Autostart service installation failed: %v", err)
+				}
+			case platform.Darwin:
+				if err := installLaunchdAgent(p, mageboxBin); err != nil {
+					cli.PrintWarning("Autostart service installation failed: %v", err)
+				}
+			}
+		} else {
+			fmt.Println()
+			cli.PrintInfo("Skipped. You can install it later with %s", cli.Command("magebox service install"))
+		}
+	}
+	fmt.Println()
+
 	// Summary
 	cli.PrintTitle("Bootstrap Complete!")
 	fmt.Println()

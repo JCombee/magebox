@@ -75,6 +75,7 @@ PHP and Nginx run natively for zero overhead. Stateful services run in Docker fo
 
 ## Features
 
+- **Autostart** - `service install` to start everything on boot — no manual `start` needed
 - **Project management** - `init`, `start`, `stop`, `restart`, `status`, `new`
 - **PHP control** - Version switching, per-project INI settings, OPcache, isolated PHP-FPM masters
 - **Database tools** - Shell, import/export with progress bars, snapshots, process monitor

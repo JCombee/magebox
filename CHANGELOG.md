@@ -5,6 +5,13 @@ All notable changes to MageBox will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.2] - 2026-03-17
+
+### Added
+
+- **Autostart Service** - New `magebox service` command with `install`, `uninstall`, and `status` subcommands. Installs a system service (systemd on Linux, launchd on macOS) that automatically starts all global services and projects on boot/login — no more manual `magebox start` after reboot.
+- **Bootstrap Autostart Prompt** - `magebox bootstrap` now offers to install the autostart service at the end of setup.
+
 ## [1.7.1] - 2026-03-17
 
 ### Added
