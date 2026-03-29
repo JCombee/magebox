@@ -5,6 +5,28 @@ All notable changes to MageBox will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.1] - 2026-03-29
+
+### Fixed
+
+- **GitHub Actions Warnings** - Fixed deprecation warnings in CI workflows. ([#51](https://github.com/qoliber/magebox/pull/51))
+- **Homebrew Formula Audit** - Fixed "Do not define methods in blocks" audit errors by using `on_arm`/`on_intel` DSL and a class-level `def install`.
+
+## [1.10.0] - 2026-03-29
+
+### Added
+
+- **Purge Command** - New `magebox purge` command to remove all generated code, preprocessed views, static content, and caches in parallel. Flushes Redis/Valkey and Varnish when configured. ([#47](https://github.com/qoliber/magebox/pull/47))
+- **phpMyAdmin Service** - Add phpMyAdmin as a built-in service with `magebox phpmyadmin enable/disable/status/open` commands and per-project config support. ([#43](https://github.com/qoliber/magebox/pull/43))
+- **Elasticvue Open Command** - New `magebox elasticvue open` command and fixed hardcoded port references. ([#44](https://github.com/qoliber/magebox/pull/44))
+- **Mailpit Commands** - New `magebox mailpit open` and `magebox mailpit status` subcommands. ([#45](https://github.com/qoliber/magebox/pull/45))
+- **Interactive TUI for Run Command** - `magebox run` without arguments now shows an interactive selector. Added `--list`/`-l` flag and implicit `magebox <name>` rewrite to `magebox run <name>`. ([#50](https://github.com/qoliber/magebox/pull/50))
+- **Expose Request Logs** - `magebox expose` now displays incoming HTTP requests with color-coded status codes. ([#40](https://github.com/qoliber/magebox/pull/40))
+
+### Fixed
+
+- **PHP Wrapper Recursion** - Unset `MAGEBOX_PHP_WRAPPER` before running the PHP binary, preventing infinite recursion when tools like GrumPHP spawn child processes. ([#39](https://github.com/qoliber/magebox/pull/39))
+
 ## [1.9.0] - 2026-03-17
 
 ### Changed
