@@ -17,10 +17,6 @@ linters:
   settings:
     errcheck:
       check-type-assertions: true
-    govet:
-      check-shadowing: false
-    gofmt:
-      simplify: true
     misspell:
       locale: US
   exclusions:
