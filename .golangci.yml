@@ -19,6 +19,19 @@ linters:
   settings:
     errcheck:
       check-type-assertions: true
+      exclude-functions:
+        - (io.Closer).Close
+        - (*os.File).Close
+        - (*compress/gzip.Reader).Close
+        - (*compress/gzip.Writer).Close
+        - (net.Conn).Close
+        - (*database/sql.DB).Close
+        - (*database/sql.Rows).Close
+        - (*net/http.Response).Body.Close
+    staticcheck:
+      checks:
+        - "all"
+        - "-QF*"
     misspell:
       locale: US
   exclusions:
