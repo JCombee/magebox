@@ -678,6 +678,26 @@ magebox db snapshot delete mybackup
 **Arguments:**
 - `name` - Snapshot name to delete (required)
 
+## Purge Command
+
+### `magebox purge`
+
+Remove all generated files, caches, and preprocessed views.
+
+```bash
+magebox purge
+```
+
+Clears:
+- `generated/metadata/*` and `generated/code/*`
+- `pub/static/*`
+- `var/cache/*`, `var/page_cache/*`, `var/view_preprocessed/*`
+- `var/composer_home/*`
+- Redis/Valkey (if configured)
+- Varnish (if configured)
+
+---
+
 ## Redis Commands
 
 These commands work with both Redis and Valkey.
