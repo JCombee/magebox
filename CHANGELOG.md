@@ -5,6 +5,18 @@ All notable changes to MageBox will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-04-04
+
+### Added
+
+- **Include Config Support** - Split `.magebox.yaml` across multiple files using `include_config` to organize large configurations into manageable pieces. ([#60](https://github.com/qoliber/magebox/pull/60))
+- **Automated Magento/MageOS Version Updates** - New CI workflow that automatically checks for new Magento and MageOS releases and updates the supported versions list. ([#64](https://github.com/qoliber/magebox/pull/64))
+
+### Fixed
+
+- **RabbitMQ Credentials** - Fixed credential mismatch by using `guest/guest` as the default RabbitMQ credentials. ([#61](https://github.com/qoliber/magebox/pull/61))
+- **Elasticsearch/OpenSearch Version Resolution** - Short version numbers (e.g., `8.17`) are now resolved to full patch versions (e.g., `8.17.0`) for Docker image compatibility. ([#62](https://github.com/qoliber/magebox/pull/62))
+
 ## [1.11.1] - 2026-04-02
 
 ### Added
