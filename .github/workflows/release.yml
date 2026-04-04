@@ -189,15 +189,26 @@ jobs:
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           path: homebrew-tap
 
-      - name: Update formula
+      - name: Update formulae
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
+          SHA_DARWIN_ARM64=${{ steps.checksums.outputs.DARWIN_ARM64 }}
+          SHA_DARWIN_AMD64=${{ steps.checksums.outputs.DARWIN_AMD64 }}
+          SHA_LINUX_ARM64=${{ steps.checksums.outputs.LINUX_ARM64 }}
+          SHA_LINUX_AMD64=${{ steps.checksums.outputs.LINUX_AMD64 }}
 
-          cat > homebrew-tap/Formula/magebox.rb << FORMULA
+          # Class name for versioned formula: MageboxAT1120 for version 1.12.0
+          CLASS_SUFFIX=$(echo "${VERSION}" | tr '.' '')
+          VERSIONED_CLASS="MageboxAT${CLASS_SUFFIX}"
+
+          # Helper to generate a formula body (takes class name as $1)
+          generate_formula() {
+            local CLASS_NAME="$1"
+            cat <<FORMULA
           # typed: false
           # frozen_string_literal: true
 
-          class Magebox < Formula
+          class ${CLASS_NAME} < Formula
             desc "Fast, native Magento development environment"
             homepage "https://magebox.dev"
             version "${VERSION}"
@@ -206,22 +217,22 @@ jobs:
             on_macos do
               on_arm do
                 url "https://github.com/qoliber/magebox/releases/download/v#{version}/magebox-darwin-arm64"
-                sha256 "${{ steps.checksums.outputs.DARWIN_ARM64 }}"
+                sha256 "${SHA_DARWIN_ARM64}"
               end
               on_intel do
                 url "https://github.com/qoliber/magebox/releases/download/v#{version}/magebox-darwin-amd64"
-                sha256 "${{ steps.checksums.outputs.DARWIN_AMD64 }}"
+                sha256 "${SHA_DARWIN_AMD64}"
               end
             end
 
             on_linux do
               on_arm do
                 url "https://github.com/qoliber/magebox/releases/download/v#{version}/magebox-linux-arm64"
-                sha256 "${{ steps.checksums.outputs.LINUX_ARM64 }}"
+                sha256 "${SHA_LINUX_ARM64}"
               end
               on_intel do
                 url "https://github.com/qoliber/magebox/releases/download/v#{version}/magebox-linux-amd64"
-                sha256 "${{ steps.checksums.outputs.LINUX_AMD64 }}"
+                sha256 "${SHA_LINUX_AMD64}"
               end
             end
 
@@ -239,13 +250,20 @@ jobs:
             end
           end
           FORMULA
+          }
+
+          # Main formula (always latest)
+          generate_formula "Magebox" > homebrew-tap/Formula/magebox.rb
+
+          # Versioned formula (e.g. magebox@1.12.0.rb)
+          generate_formula "${VERSIONED_CLASS}" > "homebrew-tap/Formula/magebox@${VERSION}.rb"
 
       - name: Commit and push
         run: |
           cd homebrew-tap
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add Formula/magebox.rb
+          git add Formula/
           git diff --staged --quiet && echo "No changes" && exit 0
           git commit -m "Update magebox to v${{ steps.version.outputs.VERSION }}"
           git push
