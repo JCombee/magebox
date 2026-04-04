@@ -119,15 +119,7 @@ jobs:
 
           # Use Python to reliably extract the base version for the same major.minor series.
           # This avoids fragile line-offset assumptions when parsing the YAML file.
-          EXISTING_BASE=$(python3 -c "
-import re, sys
-with open('lib/templates/config/versions.yaml') as f:
-    content = f.read()
-minor = sys.argv[1]
-pattern = r'version: \"' + re.escape(minor) + r'\.[^\"]*\".*?base: \"([^\"]+)\"'
-m = re.search(pattern, content, re.DOTALL)
-print(m.group(1) if m else '')
-" "$MAGEOS_MINOR")
+          EXISTING_BASE=$(python3 -c "import re,sys; f=open('lib/templates/config/versions.yaml'); c=f.read(); f.close(); minor=sys.argv[1]; m=re.search(r'version: \"'+re.escape(minor)+r'\.[^\"]*\".*?base: \"([^\"]+)\"',c,re.DOTALL); print(m.group(1) if m else '')" "$MAGEOS_MINOR")
 
           if [ -n "$EXISTING_BASE" ]; then
             echo "Inferred base from same major.minor series: $EXISTING_BASE"
