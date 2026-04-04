@@ -5,6 +5,14 @@ All notable changes to MageBox will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.1] - 2026-04-04
+
+### Fixed
+
+- **Magento Version Matrix** - Added missing Magento patch versions (2.4.8-p4, 2.4.7-p9, 2.4.6-p14) to the composer.json generator, fixing "unsupported Magento version" errors during project creation.
+- **Homebrew Install Instructions** - Updated brew install instructions to use tap + install pattern.
+- **Release Workflow** - Added versioned Homebrew formulae to release workflow and fixed YAML syntax error in auto-update-versions workflow.
+
 ## [1.12.0] - 2026-04-04
 
 ### Added
