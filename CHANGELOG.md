@@ -5,6 +5,19 @@ All notable changes to MageBox will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.1] - 2026-04-07
+
+### Changed
+
+- **Watch Command Theme Detection** - The `magebox watch` command now detects any theme with an npm `watch` script instead of only Hyvä themes. Walks the full theme tree under `app/design/frontend/` and prompts the user to select when multiple themes are found. ([#70](https://github.com/qoliber/magebox/pull/70))
+- **MageOS Version Registry** - Added MageOS 2.2.1 to the supported version registry. ([#69](https://github.com/qoliber/magebox/pull/69))
+
+### Fixed
+
+- **Expose Revert NULL Handling** - Fixed expose revert inserting literal string `'NULL'` instead of SQL `NULL` into `base_static_url` and `base_media_url` config entries, corrupting the database values after reverting an expose session. ([#71](https://github.com/qoliber/magebox/pull/71))
+- **Tmux Theme Watcher** - Fixed tmux theme watcher pane closing immediately when npm watch fails. Errors now stay visible with a user-friendly message. ([#72](https://github.com/qoliber/magebox/pull/72))
+- **FAQ: Composer Patches on macOS** - Added FAQ entry for composer patches hanging on macOS due to BSD patch interactive behavior. ([#63](https://github.com/qoliber/magebox/pull/63))
+
 ## [1.13.0] - 2026-04-06
 
 ### Added
